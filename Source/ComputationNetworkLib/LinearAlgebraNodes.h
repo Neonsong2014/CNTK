@@ -663,6 +663,20 @@ public:
                 return;
             }
 
+            // TODO: currently batch matmul only supports for dimensions equal and less than 2
+            size_t rankA = InputRef(0).GetSampleLayout().GetRank();
+            size_t rankB = InputRef(1).GetSampleLayout().GetRank();
+            if (fr.IsBatchMatmul(inputMBLayout) && rankA == 2 && rankB <= 2)
+            {
+                Matrix<ElemType> value = ValueFor(fr);
+                Matrix<ElemType> input0 = InputRef(0).ValueFor(fr);
+                Matrix<ElemType> input1 = InputRef(1).ValueFor(fr);
+                size_t m = rankA > 1 ? (m_transpose ? InputRef(0).GetSampleLayout().GetDim(1) : InputRef(0).GetSampleLayout().GetDim(0)) : 1;
+                size_t n = rankB > 1 ? InputRef(1).GetSampleLayout().GetDim(1) : 1;
+                Matrix<ElemType>::BatchMatMul(input0, m_transpose, m, input1, false, n, value, true);
+                return;
+            }
+
             // recursively call ourselves for each individual time and sequence
 
             // note this is not performant, warn user about the slow path being used
